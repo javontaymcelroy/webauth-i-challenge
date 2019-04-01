@@ -9,7 +9,7 @@ const users = require('./data/dbConfig.js');
 // ================= USES ================== //
 server.use(helmet());
 server.use(express.json());
-server.use(cors()); // put up a shared server please so I can postman
+server.use(cors());
 // ================= ENDPOINTS ================== //
 server.get('/', (req, res) => {
   res.send('Server is active.');
@@ -18,7 +18,7 @@ server.get('/', (req, res) => {
 server.post('/api/register', (req, res) => {
   let { username, password } = req.body;
 
-  req.body.password = bcrypt.hashSync(password, 10);
+  password = bcrypt.hashSync(password, 10);
 
   users('users')
     .insert(req.body)
@@ -43,6 +43,7 @@ server.post('/api/login', (req, res) => {
     .where({ username })
     .first()
     .then(user => {
+      console.log(user);
       if (user && bcrypt.compareSync(password, user.password)) {
         res.status(200).json({ message: `Hello ${user.username}` });
       } else {
