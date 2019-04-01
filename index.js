@@ -16,25 +16,31 @@ server.get('/', (req, res) => {
 });
 
 server.post('/api/register', (req, res) => {
-  let user = req.body;
+  let { username, password } = req.body;
 
-  const hash = (user.password = bcrypt.hashSync(user.password, 10));
-  user.password = hash;
+  password = bcrypt.hashSync(password, 10);
 
-  users
-    .add(user)
-    .then(saved => {
-      res.status(201).json(saved);
+  users('users')
+    .insert(req.body)
+    .then(ids => {
+      const id = ids[0];
+      users('users')
+        .where({ id })
+        .first()
+        .then(user => {
+          res.status(200).json(user);
+        });
     })
     .catch(error => {
       res.status(500).json(error);
     });
 });
 
-server.post('/api/post', (req, res) => {
+server.post('/api/login', (req, res) => {
   let { username, password } = req.body;
 
-  User.findBy({ username })
+  users('users')
+    .where({ username })
     .first()
     .then(user => {
       if (user && bcrypt.compareSync(password, user.password)) {
@@ -50,13 +56,35 @@ server.post('/api/post', (req, res) => {
     });
 });
 
-server.get('/api/user', (req, res) => {
+server.get('/api/user', restricted, (req, res) => {
   users('users')
     .then(users => {
       res.status(200).json(users);
     })
     .catch(err => res.send(err));
 });
+
+function restricted(req, res, next) {
+  const { username, password } = req.headers;
+
+  if (username && password) {
+    users('users')
+      .where({ username })
+      .first()
+      .then(user => {
+        if (user && bcrypt.compareSync(password, user.password)) {
+          next();
+        } else {
+          res.status(401).json({ message: 'Wrong creds' });
+        }
+      })
+      .catch(error => {
+        res.status(500).json(error);
+      });
+  } else {
+    res.status(401).json({ message: 'Please enter some creds, please!' });
+  }
+}
 
 const port = process.env.PORT || 5000;
 server.listen(port, () => console.log(`\n** Running on port ${port} **\n`));
