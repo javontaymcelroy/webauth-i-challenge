@@ -2,14 +2,14 @@
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
-var bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs');
 const server = express();
 // ================= IMPORTS ================== //
 const users = require('./data/dbConfig.js');
 // ================= USES ================== //
 server.use(helmet());
 server.use(express.json());
-server.use(cors());
+server.use(cors()); // put up a shared server please so I can postman
 // ================= ENDPOINTS ================== //
 server.get('/', (req, res) => {
   res.send('Server is active.');
@@ -18,7 +18,7 @@ server.get('/', (req, res) => {
 server.post('/api/register', (req, res) => {
   let { username, password } = req.body;
 
-  password = bcrypt.hashSync(password, 10);
+  req.body.password = bcrypt.hashSync(password, 10);
 
   users('users')
     .insert(req.body)
